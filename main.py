@@ -4,7 +4,7 @@ import random
 enemy_titles = {
     "title": ["shy", "wild", "insane", "blood hungry"]
 }
-
+print('testing')
 enemies = ['goblin', 'orc', 'kobold', 'beastman']
 
 places = [  {"name": "cave", "description": "A damp dark cave" },

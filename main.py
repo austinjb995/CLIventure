@@ -12,7 +12,18 @@ places = [  {"name": "cave", "description": "A damp dark cave" },
             {"name": "forest", "description": "a lively forest with trees and bushes"},
           ]
 
-items = ['potion', 'apple', 'elixir', 'copper', 'mushroom']
+items = [{"name": "potion", "description": "A mixture of herbal remedies, Grants 10HP", "rarity": 'uncommon', "value": 30,},
+         {"name": "apple", "description": "Hey Apple!, Grants 3HP", "rarity": 'common', "value": 10,},
+         {"name": "elixir", "description": "a strange concoction of herbs, Grants 1 SP and more blocks", "rarity": 'rare', "value": 100,},
+         {"name": "mushroom", "description": "Far out dude..., Grants -2 SP, and 5 HP", "rarity": 'common', "value": 5,},
+         ]
+
+rarity_weights = {
+     "common": 70,
+     "uncommon": 20,
+     "rare": 10,
+ }
+
 
 class Player:
     def __init__(self, name: str, hp=10, sp=2, bc=0):
@@ -20,7 +31,6 @@ class Player:
         self.hp = hp
         self.sp = sp
         self.bc = bc
-        self.inventory = inventory()
 
     def attack(self, enemy):
         damage_dealt = random.randint(1, 4)
@@ -83,9 +93,9 @@ class Enemy:
         d20 = random.randint(1, 20)
         if d3 == 3 and self.bc < 3:
             if d20 <= 10:
-                self.bc += 1
                 print(f"The {self.name} tried to defend but failed!")
             else:
+                self.bc += 1
                 healed = random.randint(1, 4)
                 self.hp += healed
                 print(f"The {self.title} {self.name} defended and healed for {healed} HP! Total HP: {self.hp}")
@@ -104,25 +114,38 @@ class Enemy:
 
 
 
-class inventory:
+class Inventory:
     def __init__(self):
         self.items = []
         self.gold = 0
+        self.quantity = 0
 
     def add_gold(self, amount):
         self.gold += amount
         print(f"Added {amount} gold. Total gold: {self.gold}")
 
-    def post_battle_drop(self, amount):
+    def post_battle_drop(self):
+        """
+        This will calculate the probability of dropping certain items
+
+        """
         pass
+    def found_by_scavenging(self):
+        weighted_items = []
 
-class item:
-    def __init__(self, name, description, amount):
-        self.name = name
-        self.description = description
-        self.amount = amount
+     # Expand the list based on rarity weights
+        for item in items:
+             weight = rarity_weights.get(item['rarity'])
+             weighted_items.extend([item] * weight)
 
-class place:
+        return random.choice(weighted_items)
+
+    def add_item_to_inventory(self, item):
+        self.items.append(item)
+        for _ in range(1):
+            print(f"You found a {item['name']}! ({item['rarity'].capitalize()}) - {item['description']}")
+
+class Place:
     def __init__(self, description):
         self.name = name
         self.description = description
@@ -130,7 +153,6 @@ class place:
     def generate_location():
        place = random.choice(places)
        return place
-
 
 def post_battle(player, victories):
     print(f"Number of battles won: {victories}")
@@ -151,15 +173,35 @@ def post_battle(player, victories):
             print(f"\nYou have encountered a {enemy.title} {enemy.name} (HP: {enemy.hp}, SP: {enemy.sp})")
             return enemy
         elif selection == "3":
-            location = place.generate_location()
-            print(f"You came across a {location.description}")
+            location = Place.generate_location()
+            """
+            Add a weighted system to prevent scanvenging forever
+            """
+            print(f"You came across a {location['name']}\n{location['description']}")
+            item = inventory.found_by_scavenging()
+            inventory.add_item_to_inventory(item)
+
         elif selection == "4":
             print(f"\nHP: {player.hp}\nSP: {player.sp}\nBC: {player.bc}")
         elif selection == "5":
-            print(f"\nTotal Gold: {player.inventory.gold}")
-        else:
-            print("Incorrect input")
+            if not inventory.items:
+                print("Your inventory is empty.")
+                return
 
+            print("Inventory:")
+            print("-" * 40)
+            for idx, item in enumerate(inventory.items, 1):
+                name = item.get("name", "Unknown Item")
+                desc = item.get("description", "")
+                rarity = item.get("rarity", "common").capitalize()
+                value = item.get("value", 0)
+                print(f"{idx}. {name} ({rarity})")
+                print(f"   {desc}")
+                print(f"   Value: {value}g")
+                print("-" * 40)
+                print(f" Total Gold: {inventory.gold}")
+        else:
+            print("Incorrect Input")
 
 def turn_order(player, enemy):
     d3 = random.randint(1, 3)
@@ -204,6 +246,7 @@ def turn_order(player, enemy):
 name = input("Name your adventurer: ")
 
 player = Player(name)
+inventory = Inventory()
 enemy = Enemy.create_enemy()
 victories = 0
 
@@ -218,7 +261,7 @@ while True:
         if victory:
             victories += 1
             amount = Enemy.drop_gold(enemy)
-            player.inventory.add_gold(amount)
+            inventory.add_gold(amount)
             enemy = post_battle(player, victories)
     elif selection == "2":
         player.defend()
@@ -233,4 +276,3 @@ while True:
         print(f"Enemy BC: {enemy.bc}\n")
     else:
         print("Incorrect input")
-

@@ -14,12 +14,12 @@ enemies = [
     {"name": "bandit", "rarity": "uncommon", "locations": ["swamp", "forest"]},
     {"name": "troll", "rarity": "rare", "locations": ["mine", "forest"]},
 ]
-places = [  {"name": "cave", "description": "A damp dark cave" },
-            {"name": "swamp", "description": "a murky swamp with strange noises"},
-            {"name": "mine", "description":  "a mine with rich ores"},
-            {"name": "forest", "description": "a lively forest with trees and bushes"},
-          ]
 
+places = [  {"name": "cave", "description": "A damp dark cave", "rarity": 'uncommon' },
+          {"name": "swamp", "description": "a murky swamp with strange noises", "rarity": 'common'},
+          {"name": "mine", "description":  "a mine with rich ores", "rarity": 'uncommon'},
+          {"name": "forest", "description": "a lively forest with trees and bushes", "rarity": 'common'},
+          ]
 items = [{"name": "potion", "description": "A mixture of herbal remedies, Grants 10HP", "rarity": 'uncommon', "value": 30,},
          {"name": "apple", "description": "Hey Apple!, Grants 3HP", "rarity": 'common', "value": 10,},
          {"name": "elixir", "description": "a strange concoction of herbs, Grants 1 SP, +2 blocks and +10 HP", "rarity": 'rare', "value": 100,},
@@ -37,6 +37,12 @@ enemy_rarity_weights = {
     "uncommon": 30,
     "rare": 10,
 }
+location_rarity = {
+    "common": 60,
+    "uncommon": 30,
+    "rare": 10,
+}
+
 class Player:
     def __init__(self, name: str, rested: bool, hp=10, sp=2, bc=0):
         self.name = name
@@ -121,25 +127,25 @@ class Enemy:
         return amount
 
     @staticmethod
-    def create_enemy(location=None):
+    def generate_enemy_in_place(Location=None):
         eligible_enemies = [
-            e for e in enemies if location is None or location["name"] in e["locations"]
+            e for e in enemies if Location is None or Location["name"] in e["locations"]
         ]
-        if not eligible_enemies:
-            print("No enemies found in this location. Using fallback pool")
-            eligible_enemies = enemies
 
         weighted_enemies = []
-        for e in enemies:
+
+        if not eligible_enemies:
+            eligible_enemies = enemies
+
+        for e in eligible_enemies:
             weight = enemy_rarity_weights.get(e['rarity'], 1)
             weighted_enemies.extend([e] * weight)
 
         chosen = random.choice(weighted_enemies)
         return Enemy(
-            name=chosen["name"],
+            name=chosen['name'],
             title=random.choice(enemy_titles["title"])
         )
-
 
 class Inventory:
     def __init__(self):
@@ -175,7 +181,7 @@ class Inventory:
     def use_item(self, player):
         if not self.items:
             print("You have no items to use.")
-            return
+            return False
 
         print("Which item would you like to use?")
         for idx, item in enumerate(self.items, 1):
@@ -183,19 +189,22 @@ class Inventory:
 
         choice = input("Enter the number of the item to use (or 'c' to cancel): ")
         if choice.lower() == 'c':
-            return
+            print("Item use cancelled")
+            return False
 
-        try:
-            index = int(choice) - 1
-            if index < 0 or index >= len(self.items):
-                print("Invalid choice.")
-                return
+        if not choice.isdigit():
+            print("Invalid Input. Please Enter a Number.")
+            return False
 
+
+        index = int(choice) - 1
+        if 0 <= index < len(self.items):
             item = self.items.pop(index)  # remove item from inventory
             self.apply_item_effect(item, player)
-
-        except ValueError:
-            print("Invalid input. Please enter a number.")
+            return True
+        else:
+            print("Invalid input.")
+            return False
 
     def apply_item_effect(self, item, player):
         name = item['name'].lower()
@@ -222,10 +231,13 @@ class Place:
         self.name = name
         self.description = description
 
-    @staticmethod
-    def generate_location():
-       place = random.choice(places)
-       return place
+    def generate_location_by_rarity(self):
+         weighted_locations = []
+
+         for place in places:
+            weight = location_rarity.get(place['rarity'])
+            weighted_locations.extend([place] * weight) # calculates the weight rarity by the place
+         return random.choice(weighted_locations) # randomly picks a location after calculating the weight in the weighted_locations list
 
 def post_battle(player, victories):
     print(f"Number of battles won: {victories}")
@@ -247,7 +259,7 @@ def post_battle(player, victories):
             else:
                 print(f"{player.name} yearns for battle!")
         elif selection == "2":
-            enemy = Enemy.create_enemy()
+            enemy = Enemy.generate_enemy_in_place(Location=chosen_location)
             print(f"\nYou have encountered a {enemy.title} {enemy.name} (HP: {enemy.hp}, SP: {enemy.sp})")
             player.rest_count = 0
             player.rested = False
@@ -337,14 +349,18 @@ def turn_order(player, enemy):
 
 # Game Initialization
 name = input("Name your adventurer: ")
-
+place = Place(name=None, description=None)
 player = Player(name, False)
 inventory = Inventory()
-enemy = Enemy.create_enemy()
 victories = 0
 
-print(f"\nBrave Adventurer {player.name} has set forth on an adventure\n")
-print(f"The Brave Adventurer encountered a {enemy.title} {enemy.name} (HP: {enemy.hp})")
+
+# Initializes the location and enemy
+chosen_location = place.generate_location_by_rarity()
+enemy = Enemy.generate_enemy_in_place(Location=chosen_location)
+
+print(f"Location: {chosen_location['name']} - {chosen_location['description']}")
+print(f"Enemy: {enemy.title} {enemy.name} (HP: {enemy.hp}, SP: {enemy.sp}, BC: {enemy.bc})")
 
 # Main Game Loop
 while True:
@@ -368,8 +384,8 @@ while True:
         print(f"Enemy SP: {enemy.sp}")
         print(f"Enemy BC: {enemy.bc}\n")
     elif selection == '4':
-        inventory.use_item(player)
-        if len(inventory.items) > 0:
+        used = inventory.use_item(player)
+        if used:
             enemy.defend_or_attack(player)
         player.death_check()
     else:

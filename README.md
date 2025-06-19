@@ -1,15 +1,26 @@
 # CLIventure
-A python text based RPG for fun! Go on an adventure in your Terminal!
 
-the main purpose of this project is to learn OOP in Python. I have mainly used bash which does not have OOP, so this is a challenging project to dip my feet in
-and do some learning! 🤓
+## Overview
 
-Features to be worked on:
-* Different locations (shop and random encounters) and items to obtain
-* Inventory system to use said items during battle
-* Barter system possibly
+This is a Python-based text adventure role-playing game (RPG) where players explore, battle enemies, manage inventory, and progress through an immersive narrative. The game demonstrates core programming concepts such as object-oriented design, game loops, and user input handling.
 
-Recent Additions 6/15/2025:
-* Enemies drop gold to use in future plans
-* Revamped combat by adding a new stat which restricts excessive defending/healing to gain health
-* Added the ability for enemies to defend during combat
+## Features
+
+- Dynamic enemy encounters with randomized titles and locations
+- Player stats and inventory management
+- Combat system with turn-based battles and item usage
+
+## Tech Stack
+
+- Python 3.x
+- Standard Python libraries (random, os, json)
+- No external dependencies required
+
+## Installation
+
+1. Clone this repository:
+
+   ```bash
+   git clone https://github.com/austinjb995/CLIventure.git
+   cd CLIventure
+
